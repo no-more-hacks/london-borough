@@ -1,0 +1,11 @@
+name: 001_explore_data
+title:
+username:
+account: sam-gardiner
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 7692068
+bundleId: 6538384
+url: https://sam-gardiner.shinyapps.io/001_explore_data/
+when: 1669035319.41672
+lastSyncTime: 1669035319.41672

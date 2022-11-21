@@ -4,39 +4,64 @@
 library(tidyverse)
 library(lubridate)
 
-# load in the downloaded CSV file
-# corrections for column names
-raw <- read_csv("c:/source/github/london-borough/google_activity_by_London_Borough.csv") %>%
+#' load in the downloaded CSV file
+#' corrections for column names
+raw <- read_csv(here::here("google_activity_by_London_Borough.csv")) %>%
   rename(id=`...1`)
 
+neat_metrics <- c("retail & recreation" = "retail_and_recreation_percent_change_from_baseline",
+  "grocery & pharmacy" = "grocery_and_pharmacy_percent_change_from_baseline",
+  "parks" = "parks_percent_change_from_baseline",
+  "transit stations" = "transit_stations_percent_change_from_baseline",
+  "workplaces" = "workplaces_percent_change_from_baseline",
+  "residential" = "residential_percent_change_from_baseline")
 
-# check up on the data:
-# id is unique?
+
+#' ## check up on the data:
+#' ### id is unique?
 raw %>% group_by(id) %>% tally() %>% filter(n!=1)
 
-# # area id is unique for area name
+#' ### check area id is unique for area name
 raw %>% group_by(area_name) %>% summarise(n_code = n_distinct(area_code)) %>% filter(n_code!=1)
 
 
-# de-pivot the data data
-# this is called "tidy data" in the R idiom
+#' # de-pivot the data data
+#' this is called "tidy data" in the R idiom
 tidy <- raw %>% 
   pivot_longer(cols = matches("percent_change"), names_to = "metric_name", values_to = "metric_value")
 
 
-# check the data is well-structured:
-
-# check if all the areas have all the metrics:
+#' # check the long data is well-structured:
+#' ## missing metrics
+#' check if all the areas have all the metrics:
 check_metric_count <- tidy %>% 
   group_by(area_name, date) %>% 
   filter(!is.na(metric_value), !is_null(metric_value)) %>%
   summarise(n_metric = n_distinct(metric_name))
 
+#' can see that some of the date/areas don't have all the data in them
 check_metric_count %>% filter(n_metric != 6)
 
+#' see if there's a time effect:
+check_metric_count %>%  ggplot(aes(x = date, y = n_metric, colour = area_name)) +
+  geom_line()
 
-# check values are all sensible:
+#' no time trend at least, so that's good 
+#' hard to read that chart, too much noise, so lets summarise again:
+check_metric_count %>% 
+  group_by(area_name) %>% 
+  summarise(n_metric = mean(n_metric)) %>%
+  mutate(diff = abs(n_metric-6)) %>%
+  # could do something better here, using a standard deviation or something
+  filter(diff > 0.1) %>% 
+  arrange(diff)
+
+# We see that the City of London and Kingston Upon Thames are unusual in some way
+
+#' ## large values for percentages?
+#' check values are all sensible, expect them to all be percentages:
 tidy %>% 
   filter(abs(metric_value) > 100)
-# there are some large numbers here, something to look at
+#' there are some large numbers here, something to look at!
+
 

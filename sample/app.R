@@ -9,25 +9,31 @@
 
 library(shiny)
 
+source(file = "../001_explore_data.R")
+
 # Define UI for application that draws a histogram
 ui <- fluidPage(
 
     # Application title
-    titlePanel("Old Faithful Geyser Data"),
+    titlePanel("London Borough post-COVID mobility data"),
 
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
         sidebarPanel(
-            sliderInput("bins",
-                        "Number of bins:",
-                        min = 1,
-                        max = 50,
-                        value = 30)
+          checkboxGroupInput(inputId = "metric",
+                       label = "Metric to plot",
+                       choices = neat_metrics
+                       ),
+          checkboxGroupInput(inputId = "stations",
+                             label = "Stations to plot",
+                             choices = raw %>% pull(area_name) %>% unique()
+          )
         ),
 
         # Show a plot of the generated distribution
         mainPanel(
-           plotOutput("distPlot")
+          "hello", 
+           plotOutput("timePlot", height = 1200)
         )
     )
 )
@@ -35,15 +41,13 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output) {
 
-    output$distPlot <- renderPlot({
-        # generate bins based on input$bins from ui.R
-        x    <- faithful[, 2]
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
-
-        # draw the histogram with the specified number of bins
-        hist(x, breaks = bins, col = 'darkgray', border = 'white',
-             xlab = 'Waiting time to next eruption (in mins)',
-             main = 'Histogram of waiting times')
+    output$timePlot <- renderPlot({
+      
+        
+      tidy %>% 
+        ggplot(aes(x = date, y = metric_value, colour = metric_name)) +
+        geom_line() +
+        facet_wrap(~area_name)
     })
 }
 
