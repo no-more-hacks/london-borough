@@ -9,7 +9,7 @@
 
 library(shiny)
 
-source(file = here::here("001_explore_data.R"))
+source(file = "001_explore_data.R")
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(

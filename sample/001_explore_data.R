@@ -6,7 +6,7 @@ library(lubridate)
 
 #' load in the downloaded CSV file
 #' corrections for column names
-raw <- read_csv(here::here("google_activity_by_London_Borough.csv")) %>%
+raw <- read_csv("google_activity_by_London_Borough.csv") %>%
   rename(id=`...1`)
 
 neat_metrics <- c("retail & recreation" = "retail_and_recreation_percent_change_from_baseline",
