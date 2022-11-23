@@ -9,7 +9,7 @@
 
 library(shiny)
 
-source(file = "../001_explore_data.R")
+source(file = here::here("001_explore_data.R"))
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -20,7 +20,7 @@ ui <- fluidPage(
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
         sidebarPanel( 
-          checkboxInput(inputId = "smooth", label = "Smooth data over time?", value = FALSE),
+          
           checkboxGroupInput(inputId = "metrics",
                        label = "Metric to plot",
                        choices = neat_metrics, 
@@ -35,7 +35,14 @@ ui <- fluidPage(
 
         # Show a plot of the generated distribution
         mainPanel(  width = 9,
-           plotOutput("timePlot", height = 1200)
+                    tabsetPanel(
+                      tabPanel("Timeline plot", 
+                              checkboxInput(inputId = "smooth", label = "Smooth data over time?", value = FALSE),
+                              plotOutput("timePlot", height = 1200)),
+                      tabPanel("Histogram", "caution: scales vary with selected data", plotOutput("histogram", height = 1200)),
+                      tabPanel("Table", tableOutput("table"))
+                    )
+           
         )
     )
 )
@@ -43,33 +50,49 @@ ui <- fluidPage(
 # Define server logic required to draw a histogram
 server <- function(input, output, session) {
     
-    output$timePlot <- renderPlot({
-      
-      
-      
-      filtered_data <- tidy %>% 
-        filter(area_name %in% input$boroughs) %>% 
-        filter(metric_name %in% input$metrics)
+  
+  filtered_data <- reactive({
+    filtered_data <- tidy %>% 
+      filter(area_name %in% input$boroughs) %>% 
+      filter(metric_name %in% input$metrics)
+  })
+
+  output$timePlot <- renderPlot({
+    if(nrow(filtered_data()) !=0){
       
       if(input$smooth) {
-        filtered_data <- filtered_data %>% 
+        time_data <- filtered_data() %>% 
           group_by(area_name, metric_name) %>% 
           mutate(metric_value = zoo::rollmean(metric_value, k = 10, fill = c(NA, NA, NA)))
       } else {
-        # no smoothings
-      }
-        
-      if(nrow(filtered_data) !=0){
-        filtered_data %>% 
-          ggplot(aes(x = date, y = metric_value, colour = metric_name)) +
-          geom_line() +
-          facet_wrap(~area_name) + 
-          theme(legend.position = "top") 
-      } else {
-        print("no data selected")
+        time_data <- filtered_data() 
       }
       
-    })
+      time_data %>% 
+        ggplot(aes(x = date, y = metric_value, colour = metric_name)) +
+          geom_line() +
+          facet_wrap(~area_name) + 
+          theme(legend.position = "top") +
+        scale_fill_manual(values =  neat_metrics_colours)
+    } else {
+      print("no data selected")
+    }
+    
+  })
+  
+  output$histogram <- renderPlot({
+    if(nrow(filtered_data()) !=0){
+      filtered_data() %>% 
+        ggplot(aes(x = metric_value, colour = metric_name)) +
+        geom_density() +
+        facet_wrap(~area_name, scales = "free") + 
+        theme(legend.position = "top")  +
+        scale_fill_manual( neat_metrics_colours)
+    } else {
+      print("no data selected")
+    }
+    
+  })
 }
 
 # Run the application 

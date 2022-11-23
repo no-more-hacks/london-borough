@@ -16,6 +16,27 @@ neat_metrics <- c("retail & recreation" = "retail_and_recreation_percent_change_
   "workplaces" = "workplaces_percent_change_from_baseline",
   "residential" = "residential_percent_change_from_baseline")
 
+neat_metrics_colours <- c("retail_and_recreation_percent_change_from_baseline" = "purple",
+                  "grocery_and_pharmacy_percent_change_from_baseline" = "darkpink",
+                  "parks_percent_change_from_baseline" = "#880000",
+                  "transit_stations_percent_change_from_baseline" = "blue",
+                  "workplaces_percent_change_from_baseline" = "black",
+                  "residential_percent_change_from_baseline" = "darkgreen")
+
+neat_seasons <- tribble(~month, ~season, 
+                        1, "winter",
+                        2, "winter",
+                        3, "spring",
+                        4, "spring",
+                        5, "spring",
+                        6, "summer",
+                        7, "summer",
+                        8, "summer",
+                        9, "autumn",
+                        10, "autumn",
+                        11, "autumn",
+                        12, "winter")
+
 
 #' ## check up on the data:
 #' ### id is unique?
