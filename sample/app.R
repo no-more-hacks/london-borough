@@ -9,7 +9,11 @@
 
 library(shiny)
 
-source(file = "001_explore_data.R")
+if (!shiny::serverInfo()$shinyServer) {
+  source(file = "001_explore_data.R")
+} else {
+
+}
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -20,7 +24,7 @@ ui <- fluidPage(
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
         sidebarPanel( 
-          
+          actionButton("minimal_boroughs", label = "set minimal"),
           checkboxGroupInput(inputId = "metrics",
                        label = "Metric to plot",
                        choices = neat_metrics, 
@@ -40,6 +44,7 @@ ui <- fluidPage(
                               checkboxInput(inputId = "smooth", label = "Smooth data over time?", value = FALSE),
                               plotOutput("timePlot", height = 1200)),
                       tabPanel("Histogram", "caution: scales vary with selected data", plotOutput("histogram", height = 1200)),
+                      tabPanel("Pairs plot", plotOutput("pairs_plot", height = 1200), height=1200),
                       tabPanel("Table", tableOutput("table"))
                     )
            
@@ -73,12 +78,24 @@ server <- function(input, output, session) {
           geom_line() +
           facet_wrap(~area_name) + 
           theme(legend.position = "top") +
-        scale_fill_manual(values =  neat_metrics_colours)
+        scale_fill_manual(values =  neat_metrics_colours, 
+                          breaks = names(neat_metrics_colours), 
+                          labels = names(neat_metrics))
     } else {
       print("no data selected")
     }
     
   })
+  
+  observeEvent(input$minimal_boroughs, { 
+    updateCheckboxGroupInput(session, inputId = "boroughs", 
+                             selected = c(
+                               # two residential
+                               "Lewisham", "Ealing",
+                               # two work places
+                                "City of London", "Westminster"))
+  })
+
   
   output$histogram <- renderPlot({
     if(nrow(filtered_data()) !=0){
@@ -88,6 +105,23 @@ server <- function(input, output, session) {
         facet_wrap(~area_name, scales = "free") + 
         theme(legend.position = "top")  +
         scale_fill_manual( neat_metrics_colours)
+    } else {
+      print("no data selected")
+    }
+    
+  })
+  
+  output$pairs_plot <- renderPlot({
+    if(nrow(filtered_data()) !=0){
+      xx <- filtered_data()  %>% 
+        pivot_wider(names_from = metric_name, 
+                    values_from = metric_value)
+      
+      GGally::ggpairs(xx %>% 
+                        select(area_name, matches("percent")), 
+                      columns = colnames(
+                        xx %>% 
+                          select(matches("percent"))), ggplot2::aes(alpha = 0.1, colour = area_name))
     } else {
       print("no data selected")
     }
