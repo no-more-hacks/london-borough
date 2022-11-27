@@ -17,7 +17,7 @@ neat_metrics <- c("retail & recreation" = "retail_and_recreation_percent_change_
   "residential" = "residential_percent_change_from_baseline")
 
 neat_metrics_colours <- c("retail_and_recreation_percent_change_from_baseline" = "purple",
-                  "grocery_and_pharmacy_percent_change_from_baseline" = "darkpink",
+                  "grocery_and_pharmacy_percent_change_from_baseline" = "goldenrod",
                   "parks_percent_change_from_baseline" = "#880000",
                   "transit_stations_percent_change_from_baseline" = "blue",
                   "workplaces_percent_change_from_baseline" = "black",
