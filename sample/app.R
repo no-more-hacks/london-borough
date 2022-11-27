@@ -24,7 +24,7 @@ ui <- fluidPage(
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
         sidebarPanel( 
-          actionButton("minimal_boroughs", label = "set\nminimal\nboroughs"),
+          actionButton("minimal_boroughs", label = h4(HTML("set<br/>minimal<br/>boroughs")) ),
           checkboxGroupInput(inputId = "metrics",
                        label = "Metric to plot",
                        choices = neat_metrics, 
@@ -34,18 +34,30 @@ ui <- fluidPage(
                              label = "Boroughs to plot",
                              choices = raw %>% pull(area_name) %>% unique(), 
                              selected = raw %>% pull(area_name) %>% unique(),
-          ), width = 1
+          ), width = "2"
         ),
 
         # Show a plot of the generated distribution
         mainPanel(  width = 9,
                     tabsetPanel(
                       tabPanel("Timeline plot", 
+                               HTML("<p>A basic timeline plot, but faceted over all the boroughs, simple but useful for initial eyeballing of data</p>"),
+                               "A simple rolling average is included to reduce noise in the data.",
                               checkboxInput(inputId = "smooth", label = "Smooth data over time?", value = FALSE),
                               plotOutput("timePlot", height = 1200)),
-                      tabPanel("Histogram", "caution: scales vary with selected data", plotOutput("histogram", height = 1200)),
-                      tabPanel("Pairs plot", plotOutput("pairs_plot", height = 1200), height=1200),
+                      tabPanel("Histogram", 
+                               "Caution: scales vary with selected data", 
+                               plotOutput("histogram", height = 1200)),
+                      tabPanel("Pairs plot", 
+                               "Powerful plot for comparing the correlation of multiple variables at once", 
+                               HTML("<br/>"),
+                               "Suggestion: try selecting just 2 variables 'parks' and 'workplaces' to see how correlation is displayed",
+                               plotOutput("pairs_plot", height = 1200), height=1200),
                       tabPanel("Summary Data", 
+                               "A summary plot of mean (red dot), median (black dot) and quintile ranges",
+                               HTML("<br/>"),
+                               "Quintiles and means reveal data skew.",
+                               "Try selecting just a the minimal boroughs,  just 2 variables 'parks' and 'workplaces' and then use the pre-set date ranges below",
                                shiny::sliderInput(inputId = "date_select_min",
                                                   min = min(tidy$date),
                                                   max = max(tidy$date), 
