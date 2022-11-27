@@ -9,19 +9,19 @@ library(lubridate)
 raw <- read_csv("google_activity_by_London_Borough.csv") %>%
   rename(id=`...1`)
 
-neat_metrics <- c("retail & recreation" = "retail_and_recreation_percent_change_from_baseline",
-  "grocery & pharmacy" = "grocery_and_pharmacy_percent_change_from_baseline",
-  "parks" = "parks_percent_change_from_baseline",
-  "transit stations" = "transit_stations_percent_change_from_baseline",
-  "workplaces" = "workplaces_percent_change_from_baseline",
-  "residential" = "residential_percent_change_from_baseline")
+neat_metrics <- c("retail & recreation" = "retail_and_recreation",
+  "grocery & pharmacy" = "grocery_and_pharmacy",
+  "parks" = "parks",
+  "transit stations" = "transit_stations",
+  "workplaces" = "workplaces",
+  "residential" = "residential")
 
-neat_metrics_colours <- c("retail_and_recreation_percent_change_from_baseline" = "purple",
-                  "grocery_and_pharmacy_percent_change_from_baseline" = "goldenrod",
-                  "parks_percent_change_from_baseline" = "#880000",
-                  "transit_stations_percent_change_from_baseline" = "blue",
-                  "workplaces_percent_change_from_baseline" = "black",
-                  "residential_percent_change_from_baseline" = "darkgreen")
+neat_metrics_colours <- c("retail_and_recreation" = "purple",
+                  "grocery_and_pharmacy" = "goldenrod",
+                  "parks" = "#880000",
+                  "transit_stations" = "blue",
+                  "workplaces" = "black",
+                  "residential" = "darkgreen")
 
 neat_seasons <- tribble(~month, ~season, 
                         1, "winter",
@@ -49,7 +49,11 @@ raw %>% group_by(area_name) %>% summarise(n_code = n_distinct(area_code)) %>% fi
 #' # de-pivot the data data
 #' this is called "tidy data" in the R idiom
 tidy <- raw %>% 
-  pivot_longer(cols = matches("percent_change"), names_to = "metric_name", values_to = "metric_value")
+  pivot_longer(cols = matches("percent_change"), names_to = "metric_name", values_to = "metric_value")  %>% 
+  mutate(metric_name = str_replace_all(metric_name, pattern = "_percent_change_from_baseline", replacement = "")) %>% 
+  #mutate(metric_name = str_replace_all(metric_name, pattern = "_", replacement = " ")) %>%
+  #mutate(metric_name = str_replace_all(metric_name, pattern = "and", replacement = "&")) %>% 
+  {.}
 
 
 #' # check the long data is well-structured:

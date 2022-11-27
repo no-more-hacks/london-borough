@@ -134,10 +134,10 @@ server <- function(input, output, session) {
                     values_from = metric_value)
       
       GGally::ggpairs(xx %>% 
-                        select(area_name, matches("percent")), 
+                        select(-id,-date, -area_code), 
                       columns = colnames(
                         xx %>% 
-                          select(matches("percent"))), ggplot2::aes(alpha = 0.1, colour = area_name))
+                          select(-id,-date, -area_code, -area_name)), ggplot2::aes(alpha = 0.1, colour = area_name))
     } else {
       print("no data selected")
     }
