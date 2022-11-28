@@ -10,10 +10,12 @@
 library(shiny)
 
 if (!shiny::serverInfo()$shinyServer) {
-  source(file = "001_explore_data.R")
+ # running local  
 } else {
-
+  # running on server
 }
+
+source(file = "001_explore_data.R")
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -44,20 +46,20 @@ ui <- fluidPage(
                                HTML("<p>A basic timeline plot, but faceted over all the boroughs, simple but useful for initial eyeballing of data</p>"),
                                "A simple rolling average is included to reduce noise in the data.",
                               checkboxInput(inputId = "smooth", label = "Smooth data over time?", value = FALSE),
-                              plotOutput("timePlot", height = 1200)),
+                              plotOutput("timePlot", height = 900)),
                       tabPanel("Histogram", 
                                "Caution: scales vary with selected data", 
-                               plotOutput("histogram", height = 1200)),
+                               plotOutput("histogram", height = 900)),
                       tabPanel("Pairs plot", 
                                "Powerful plot for comparing the correlation of multiple variables at once", 
                                HTML("<br/>"),
                                "Suggestion: try selecting just 2 variables 'parks' and 'workplaces' to see how correlation is displayed",
-                               plotOutput("pairs_plot", height = 1200), height=1200),
+                               plotOutput("pairs_plot", height = 900), height=1200),
                       tabPanel("Summary Data", 
-                               "A summary plot of mean (red dot), median (black dot) and quintile ranges",
+                               "A summary plot of mean (coloured dot), median (black dot) and quintile ranges, data is clipped at 100% to keep scales constant",
                                HTML("<br/>"),
                                "Quintiles and means reveal data skew.",
-                               "Try selecting just a the minimal boroughs,  just 2 variables 'parks' and 'workplaces' and then use the pre-set date ranges below",
+                               "Try selecting just the minimal boroughs,  just 2 variables 'residential' and 'workplaces' and then use the pre-set date ranges below",
                                shiny::sliderInput(inputId = "date_select_min",
                                                   min = min(tidy$date),
                                                   max = max(tidy$date), 
@@ -74,7 +76,8 @@ ui <- fluidPage(
                                actionButton("third_lockdown", label = "Third Lockdown (Jan 2021)"),
                                actionButton("post_lockdown", label = "After school reopening (March 2021)"),
                                tableOutput("table"), 
-                               plotOutput("summary_stats", height = 600), height=1200)
+                               plotOutput("summary_stats", height = 600), 
+                               height=1200)
                     )
         )
     )
@@ -105,10 +108,9 @@ server <- function(input, output, session) {
         ggplot(aes(x = date, y = metric_value, colour = metric_name)) +
           geom_line() +
           facet_wrap(~area_name) + 
-          theme(legend.position = "top") +
-        scale_fill_manual(values =  neat_metrics_colours, 
-                          breaks = names(neat_metrics_colours), 
-                          labels = names(neat_metrics))
+          theme(legend.position = "top")+
+        scale_color_manual(values =  neat_metrics_colours, breaks = names(neat_metrics_colours), labels = names(neat_metrics)) 
+      
     } else {
       print("no data selected")
     }
@@ -131,8 +133,9 @@ server <- function(input, output, session) {
         ggplot(aes(x = metric_value, colour = metric_name)) +
         geom_density() +
         facet_wrap(~area_name, scales = "free") + 
-        theme(legend.position = "top")  +
-        scale_fill_manual( neat_metrics_colours)
+        theme(legend.position = "top")+
+        scale_color_manual(values =  neat_metrics_colours, breaks = names(neat_metrics_colours), labels = names(neat_metrics)) 
+        
     } else {
       print("no data selected")
     }
@@ -207,8 +210,8 @@ server <- function(input, output, session) {
       
       cropped %>% 
         ggplot(mapping = aes(x = area_name)) + 
-        geom_point(aes(y = mean, colour = metric_name, size = 3)) + 
         geom_point(aes(y = median), colour = "black", alpha = 0.4)  + 
+        geom_point(aes(y = mean, colour = metric_name, size = 3, alpha = 0.6)) + 
         geom_errorbar(mapping = aes(y = median, ymin = lower_quintile, ymax = upper_quintile), alpha = 0.4, size = 2) + 
         geom_linerange(mapping = aes(y = median, ymin = min, ymax = max), alpha = 0.3) + 
         facet_wrap(~metric_name) + 
@@ -218,7 +221,7 @@ server <- function(input, output, session) {
         theme_minimal() +
         theme(strip.text = element_text(size = 18), 
               axis.text.x = element_text(size = 18),
-              axis.text.y = element_text(size = 18)) +
+              axis.text.y = element_text(size = 18), legend.position = "none") +
       coord_flip() 
       
     } else {
