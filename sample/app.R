@@ -82,7 +82,8 @@ ui <- fluidPage(
                                tableOutput("table"), 
                                plotOutput("summary_stats", height = 600), 
                                height=1200),
-                      tabPanel("Map",  
+                      tabPanel("Map",
+                               "Median change in the metric over the time period.",
                                plotOutput("map", height = 900))
                     )
         )
