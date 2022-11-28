@@ -27,6 +27,22 @@ ui <- fluidPage(
     sidebarLayout(
         sidebarPanel( 
           actionButton("minimal_boroughs", label = h4(HTML("set<br/>minimal<br/>boroughs")) ),
+          actionButton("all_boroughs", label = h4(HTML("set<br/>all<br/>boroughs")) ),
+          shiny::sliderInput(inputId = "date_select_min",
+                             min = min(tidy$date),
+                             max = max(tidy$date), 
+                             value =min(tidy$date), 
+                             label = "choose date min:"),
+          shiny::sliderInput(inputId = "date_select_max",
+                             min = min(tidy$date),
+                             max = max(tidy$date), 
+                             value =max(tidy$date), 
+                             label = "choose date max:"),
+          actionButton("first_lockdown", label = "First Lockdown up to 'Rule Of Six' (May 2020)"),
+          actionButton("second_lockdown", label = "Second Lockdown (Oct 2020)"),
+          
+          actionButton("third_lockdown", label = "Third Lockdown (Jan 2021)"),
+          actionButton("post_lockdown", label = "After school reopening And lockdown lift (2021)"),
           checkboxGroupInput(inputId = "metrics",
                        label = "Metric to plot",
                        choices = neat_metrics, 
@@ -36,11 +52,14 @@ ui <- fluidPage(
                              label = "Boroughs to plot",
                              choices = raw %>% pull(area_name) %>% unique(), 
                              selected = raw %>% pull(area_name) %>% unique(),
-          ), width = "2"
+                             
+          ), 
+          
+          width = "4"
         ),
 
         # Show a plot of the generated distribution
-        mainPanel(  width = 9,
+        mainPanel(  width = 8,
                     tabsetPanel(
                       tabPanel("Timeline plot", 
                                HTML("<p>A basic timeline plot, but faceted over all the boroughs, simple but useful for initial eyeballing of data</p>"),
@@ -60,24 +79,11 @@ ui <- fluidPage(
                                HTML("<br/>"),
                                "Quintiles and means reveal data skew.",
                                "Try selecting just the minimal boroughs,  just 2 variables 'residential' and 'workplaces' and then use the pre-set date ranges below",
-                               shiny::sliderInput(inputId = "date_select_min",
-                                                  min = min(tidy$date),
-                                                  max = max(tidy$date), 
-                                                  value =min(tidy$date), 
-                                                  label = "choose date min:"),
-                               shiny::sliderInput(inputId = "date_select_max",
-                                                  min = min(tidy$date),
-                                                  max = max(tidy$date), 
-                                                  value =max(tidy$date), 
-                                                  label = "choose date max:"),
-                               actionButton("first_lockdown", label = "First Lockdown up to 'Rule Of Six' (May 2020)"),
-                               actionButton("second_lockdown", label = "Second Lockdown (Oct 2020)"),
-                               
-                               actionButton("third_lockdown", label = "Third Lockdown (Jan 2021)"),
-                               actionButton("post_lockdown", label = "After school reopening (March 2021)"),
                                tableOutput("table"), 
                                plotOutput("summary_stats", height = 600), 
-                               height=1200)
+                               height=1200),
+                      tabPanel("Map",  
+                               plotOutput("map", height = 900))
                     )
         )
     )
@@ -88,9 +94,14 @@ server <- function(input, output, session) {
     
   
   filtered_data <- reactive({
+    
+    max_date <- input$date_select_max
+    min_date <- input$date_select_min
+    
     filtered_data <- tidy %>% 
       filter(area_name %in% input$boroughs) %>% 
-      filter(metric_name %in% input$metrics)
+      filter(metric_name %in% input$metrics) %>% 
+      filter(date <= max_date, date >= min_date)
   })
 
   output$timePlot <- renderPlot({
@@ -125,6 +136,11 @@ server <- function(input, output, session) {
                                # two work places
                                 "City of London", "Westminster"))
   })
+  
+  observeEvent(input$all_boroughs, { 
+    updateCheckboxGroupInput(session, inputId = "boroughs", 
+                             selected = unique(tidy$area_name))
+  })
 
   
   output$histogram <- renderPlot({
@@ -132,7 +148,7 @@ server <- function(input, output, session) {
       filtered_data() %>% 
         ggplot(aes(x = metric_value, colour = metric_name)) +
         geom_density() +
-        facet_wrap(~area_name, scales = "free") + 
+        facet_wrap(~area_name) + 
         theme(legend.position = "top")+
         scale_color_manual(values =  neat_metrics_colours, breaks = names(neat_metrics_colours), labels = names(neat_metrics)) 
         
@@ -182,7 +198,7 @@ server <- function(input, output, session) {
   
   observeEvent(input$post_lockdown, { 
     updateSliderInput(session, inputId = "date_select_min", value = ymd("2021-05-17"))
-    updateSliderInput(session, inputId = "date_select_max", value = max(filtered_data()$date))
+    updateSliderInput(session, inputId = "date_select_max", value = max(tidy$date))
   })
   
   
@@ -195,7 +211,6 @@ server <- function(input, output, session) {
     
     if(nrow(filtered_data()) !=0){
       cropped <- filtered_data() %>% 
-        filter(date <= max_date, date >= min_date) %>% 
         group_by(metric_name, area_name) %>% 
         summarise(median = median(metric_value, na.rm= T),
                   mean = mean(metric_value, na.rm= T),
@@ -228,6 +243,43 @@ server <- function(input, output, session) {
       print("no data selected")
     }
   })
+  
+  
+  
+  output$map <- renderPlot({
+
+    if(nrow(filtered_data()) !=0){
+
+      cropped <- filtered_data() %>%
+        group_by(metric_name, area_name) %>%
+        summarise(median = median(metric_value, na.rm= T),
+                  mean = mean(metric_value, na.rm= T),
+                  upper_quintile = quantile(metric_value,probs =  0.8, na.rm = T),
+                  lower_quintile = quantile(metric_value,probs =  0.2, na.rm = T),
+                  max = max(metric_value, na.rm= T),
+                  min = min(metric_value, na.rm= T)
+        ) %>% 
+        pivot_longer(names_to = "measure_name", cols = c(mean, median, lower_quintile, upper_quintile, max, min )) %>% 
+        mutate(value = case_when( value > quantile(value, prob = 0.90, na.rm = T) ~ quantile(value, prob = 0.90, na.rm = T),
+                                  value < quantile(value, prob = 0.10, na.rm = T) ~ quantile(value, prob = 0.10, na.rm = T), 
+                                  TRUE ~ value))
+      
+      map <- shape %>% left_join(cropped, by = c("NAME"= "area_name")) %>% filter(measure_name == "median")
+      
+
+       
+        ggplot(map) + 
+          geom_sf(mapping = aes(fill = value)) + 
+          coord_sf() + facet_wrap(~metric_name) 
+      
+      
+    } else {
+      print("no data selected")
+    }
+  })
+  
+  
+  
   
 }
 

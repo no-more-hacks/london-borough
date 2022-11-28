@@ -4,10 +4,19 @@
 library(tidyverse)
 library(lubridate)
 
+#setwd(here::here("sample"))
+
 #' load in the downloaded CSV file
 #' corrections for column names
 raw <- read_csv("google_activity_by_London_Borough.csv") %>%
   rename(id=`...1`)
+
+shape <- read_sf(dsn = "map", 
+                 layer = "London_Borough_Excluding_MHW")
+
+
+
+
 
 neat_metrics <- c("retail & recreation" = "retail_and_recreation",
   "grocery & pharmacy" = "grocery_and_pharmacy",
